@@ -1,7 +1,7 @@
 # fastlog
 基于spring的aop特性，提供了一种通过注解打日志的方式，可以方便而且没有侵入性地记录程序运行过程中的各种重要日志
 
-## 使用方式
+## 使用方法
 1. 修改spring配置，启用`@AspectJ`支持
 ```xml
 <aop:aspectj-autoproxy/>
