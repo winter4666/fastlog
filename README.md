@@ -37,7 +37,7 @@ public class OperLogRecorder implements FastLogListener {
 </bean>
 ```
 
-4. 在需要记录日志的方法上面加上`@FastLog`注解
+4. 在需要记录日志的方法上面加上`@FastLog`注解，`fieldValues`里面填写的字符串为[SpEL](https://docs.spring.io/spring/docs/3.0.x/reference/expressions.html)
 ```java
 @FastLog(value="userLogin",			
 		fieldNames={"用户名","密码"},
