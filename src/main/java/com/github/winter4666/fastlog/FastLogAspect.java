@@ -27,7 +27,7 @@ public class FastLogAspect  {
 	private FastLogListener fastLogListener;
 	
 	public FastLogAspect(FastLogListener fastLogListener) {
-		
+		this.fastLogListener = fastLogListener;
 	}
 
 	@AfterReturning("@annotation(fastLog)")
