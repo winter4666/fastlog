@@ -3,6 +3,10 @@ package com.github.winter4666.fastlog;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
@@ -26,14 +30,32 @@ public class FastLogAspect  {
 	
 	private FastLogListener fastLogListener;
 	
+	private ExecutorService executorService;
+	
 	public FastLogAspect(FastLogListener fastLogListener) {
+		this(fastLogListener, true);
+	}
+	
+	public FastLogAspect(FastLogListener fastLogListener,Boolean async) {
 		this.fastLogListener = fastLogListener;
+		if(async) {
+			executorService = Executors.newSingleThreadExecutor(new ThreadFactory() {
+				
+				@Override
+				public Thread newThread(Runnable r) {
+		            Thread thread = Executors.defaultThreadFactory().newThread(r); 
+		            thread.setDaemon(true); 
+		            return thread; 
+				}
+			});
+		}
 	}
 
 	@AfterReturning("@annotation(fastLog)")
     public void log(final JoinPoint joinPoint, final FastLog fastLog) throws Throwable {
 		try {
-	    	List<LogField> logFields = new ArrayList<>();
+			//获取记录的字段
+	    	final List<LogField> logFields = new ArrayList<>();
 	    	if(fastLog.fieldNames().length > 0) {
 	    		if(fastLog.fieldValues().length != fastLog.fieldNames().length) {
 	    			throw new RuntimeException("length of fieldNames is not equal to length of fieldValues");
@@ -71,9 +93,25 @@ public class FastLogAspect  {
 	    			logField.setFieldValue(fieldValueStr);
 	    			logFields.add(logField);
 	    		}
-				
 	    	}
-    		fastLogListener.log(fastLog.value(), logFields);
+	    	
+	    	final Map<String, String> contextMap = FastLogContext.getContextMap();
+	    	
+	    	if(executorService != null) {
+	    		executorService.execute(new Runnable() {
+					
+					@Override
+					public void run() {
+						try {
+							fastLogListener.log(fastLog.value(), logFields, contextMap);
+						} catch(Throwable t) {
+							logger.error("writeOperLog error", t);
+				    	}
+					}
+				});
+	    	} else {
+	    		fastLogListener.log(fastLog.value(), logFields, contextMap);
+	    	}
 		} catch(Throwable t) {
 			logger.error("writeOperLog error", t);
     	}

@@ -10,11 +10,9 @@
 2. 实现`FastLogListener`接口
 ```java
 public class OperLogRecorder implements FastLogListener {
-	
-	private static Logger logger = LoggerFactory.getLogger(OperLogRecorder.class);
 
 	@Override
-	public void log(String logType, List<LogField> logFields) {
+	public void log(String logType, List<LogField> logFields,Map<String, String> contextMap) {
 		StringBuilder logFieldsStr = new StringBuilder();
 		for(LogField logField : logFields) {
 			logFieldsStr.append(logField.getFieldName())
@@ -22,15 +20,14 @@ public class OperLogRecorder implements FastLogListener {
 						.append(logField.getFieldValue())
 						.append(" ");
 		}
-		logger.info("logType:{},logFields:{}",logType,logFieldsStr);
+		System.out.println("logType:" + logType + ",logFields:" + logFieldsStr + ",contextMap:" + contextMap);
 	}
-
 }
 ```
 
 3. `FastLogAspect`注入spring
 ```xml
-<bean id="operLogRecorder" class="com.github.winter4666.test.OperLogRecorder"/>
+<bean id="operLogRecorder" class="xxx.xxx.OperLogRecorder"/>
 	
 <bean class="com.github.winter4666.fastlog.FastLogAspect">
     <constructor-arg name="fastLogListener" ref="operLogRecorder"/>
@@ -42,13 +39,12 @@ public class OperLogRecorder implements FastLogListener {
 @FastLog(value="userLogin",			
 		fieldNames={"用户名","密码"},
 		fieldValues={"#a0","#a1"})
-@Override
 public void login(String username, String password) {
-	
+	FastLogContext.put("测试", "任意值");
 }
 ```
 
 5. 当上面注解的方法被调用时，`FastLogListener`的`log`方法被回调，打印出下面的信息
 ```
-2019-05-08 17:31:32.478 [INFO] #pool-2-thread-1# com.github.winter4666.test.OperLogRecorder - logType:userLogin,logFields:用户名:test 密码:1234 
+logType:userLogin,logFields:用户名:test 密码:1234 ,contextMap:{测试=任意值}
 ```
