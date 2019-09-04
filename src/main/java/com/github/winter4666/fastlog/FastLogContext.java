@@ -9,17 +9,17 @@ import java.util.Map;
  */
 public class FastLogContext {
 	
-	private static final ThreadLocal<Map<String, String>> contextMapHolder = new ThreadLocal<>();
+	private static final ThreadLocal<Map<String, Object>> contextMapHolder = new ThreadLocal<>();
 	
 	/**
 	 * 向当前线程的上下文中放入值，放入的所有值最终会以{@link Map}的形式传回实现{@link FastLogListener}接口的类
 	 * @param key
 	 * @param value
 	 */
-	public static void put(String key,String value) {
-		Map<String, String> contextMap = contextMapHolder.get();
+	public static void put(String key,Object value) {
+		Map<String, Object> contextMap = contextMapHolder.get();
 		if(contextMap == null) {
-			contextMap = new HashMap<String, String>();
+			contextMap = new HashMap<>();
 			contextMapHolder.set(contextMap);
 		}
 		contextMap.put(key, value);
@@ -32,10 +32,10 @@ public class FastLogContext {
 		contextMapHolder.remove();
 	}
 	
-	static Map<String, String> getContextMap() {
-		Map<String, String> contextMap = contextMapHolder.get();
+	static Map<String, Object> getContextMap() {
+		Map<String, Object> contextMap = contextMapHolder.get();
 		if(contextMap == null) {
-			return new HashMap<String, String>();
+			return new HashMap<>();
 		} else {
 			return contextMap;
 		}

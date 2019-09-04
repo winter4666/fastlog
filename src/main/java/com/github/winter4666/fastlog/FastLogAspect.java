@@ -95,7 +95,7 @@ public class FastLogAspect  {
 	    		}
 	    	}
 	    	
-	    	final Map<String, String> contextMap = FastLogContext.getContextMap();
+	    	final Map<String, Object> contextMap = FastLogContext.getContextMap();
 	    	
 	    	if(executorService != null) {
 	    		executorService.execute(new Runnable() {

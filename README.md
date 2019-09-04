@@ -12,7 +12,7 @@
 public class OperLogRecorder implements FastLogListener {
 
 	@Override
-	public void log(String logType, List<LogField> logFields,Map<String, String> contextMap) {
+	public void log(String logType, List<LogField> logFields,Map<String, Object> contextMap) {
 		StringBuilder logFieldsStr = new StringBuilder();
 		for(LogField logField : logFields) {
 			logFieldsStr.append(logField.getFieldName())
