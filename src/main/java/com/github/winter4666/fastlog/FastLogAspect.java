@@ -53,67 +53,63 @@ public class FastLogAspect  {
 
 	@AfterReturning("@annotation(fastLog)")
     public void log(final JoinPoint joinPoint, final FastLog fastLog) throws Throwable {
-		try {
-			//获取记录的字段
-	    	final List<LogField> logFields = new ArrayList<>();
-	    	if(fastLog.fieldNames().length > 0) {
-	    		if(fastLog.fieldValues().length != fastLog.fieldNames().length) {
-	    			throw new RuntimeException("length of fieldNames is not equal to length of fieldValues");
-	    		}
-	    		
-	    		ExpressionParser parser = new SpelExpressionParser();
-				EvaluationContext context = new StandardEvaluationContext();
-				for (int i = 0; i < joinPoint.getArgs().length; i++) {
-					context.setVariable("a" + i, joinPoint.getArgs()[i]);
-					context.setVariable("p" + i, joinPoint.getArgs()[i]);
+		//获取记录的字段
+    	final List<LogField> logFields = new ArrayList<>();
+    	if(fastLog.fieldNames().length > 0) {
+    		if(fastLog.fieldValues().length != fastLog.fieldNames().length) {
+    			throw new RuntimeException("length of fieldNames is not equal to length of fieldValues");
+    		}
+    		
+    		ExpressionParser parser = new SpelExpressionParser();
+			EvaluationContext context = new StandardEvaluationContext();
+			for (int i = 0; i < joinPoint.getArgs().length; i++) {
+				context.setVariable("a" + i, joinPoint.getArgs()[i]);
+				context.setVariable("p" + i, joinPoint.getArgs()[i]);
+			}
+    		for(int i = 0;i < fastLog.fieldNames().length;i++) {
+    			LogField logField = new LogField();
+    			logField.setFieldName(fastLog.fieldNames()[i]);
+    			
+    			Expression exp = parser.parseExpression(fastLog.fieldValues()[i]);
+    			Object fieldValue = exp.getValue(context);
+    			String fieldValueStr = null;
+    			if(fieldValue == null) {
+    				fieldValueStr = String.valueOf(fieldValue);
+    			} else if(fieldValue.getClass().isArray()) {
+    				StringBuilder fieldValueStrBuilder = new StringBuilder("{");
+    				int length = Array.getLength(fieldValue);
+    				for(int j = 0;j < length;j++) {
+    					fieldValueStrBuilder.append(Array.get(fieldValue, j));
+    					if(j != length - 1) {
+    						fieldValueStrBuilder.append(",");
+    					}
+    				}
+    				fieldValueStrBuilder.append("}");
+    				fieldValueStr = fieldValueStrBuilder.toString();
+    			} else {
+    				fieldValueStr = String.valueOf(fieldValue);
+    			}
+    			logField.setFieldValue(fieldValueStr);
+    			logFields.add(logField);
+    		}
+    	}
+    	
+    	final Map<String, Object> contextMap = FastLogContext.getContextMap();
+    	
+    	if(executorService != null) {
+    		executorService.execute(new Runnable() {
+				
+				@Override
+				public void run() {
+					try {
+						fastLogListener.log(fastLog.value(), logFields, contextMap);
+					} catch(Throwable t) {
+						logger.error("writeOperLog error", t);
+			    	}
 				}
-	    		for(int i = 0;i < fastLog.fieldNames().length;i++) {
-	    			LogField logField = new LogField();
-	    			logField.setFieldName(fastLog.fieldNames()[i]);
-	    			
-	    			Expression exp = parser.parseExpression(fastLog.fieldValues()[i]);
-	    			Object fieldValue = exp.getValue(context);
-	    			String fieldValueStr = null;
-	    			if(fieldValue == null) {
-	    				fieldValueStr = String.valueOf(fieldValue);
-	    			} else if(fieldValue.getClass().isArray()) {
-	    				StringBuilder fieldValueStrBuilder = new StringBuilder("{");
-	    				int length = Array.getLength(fieldValue);
-	    				for(int j = 0;j < length;j++) {
-	    					fieldValueStrBuilder.append(Array.get(fieldValue, j));
-	    					if(j != length - 1) {
-	    						fieldValueStrBuilder.append(",");
-	    					}
-	    				}
-	    				fieldValueStrBuilder.append("}");
-	    				fieldValueStr = fieldValueStrBuilder.toString();
-	    			} else {
-	    				fieldValueStr = String.valueOf(fieldValue);
-	    			}
-	    			logField.setFieldValue(fieldValueStr);
-	    			logFields.add(logField);
-	    		}
-	    	}
-	    	
-	    	final Map<String, Object> contextMap = FastLogContext.getContextMap();
-	    	
-	    	if(executorService != null) {
-	    		executorService.execute(new Runnable() {
-					
-					@Override
-					public void run() {
-						try {
-							fastLogListener.log(fastLog.value(), logFields, contextMap);
-						} catch(Throwable t) {
-							logger.error("writeOperLog error", t);
-				    	}
-					}
-				});
-	    	} else {
-	    		fastLogListener.log(fastLog.value(), logFields, contextMap);
-	    	}
-		} catch(Throwable t) {
-			logger.error("writeOperLog error", t);
+			});
+    	} else {
+    		fastLogListener.log(fastLog.value(), logFields, contextMap);
     	}
 
     }
